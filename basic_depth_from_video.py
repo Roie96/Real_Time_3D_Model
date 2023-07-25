@@ -80,7 +80,6 @@ depth_frame = np.zeros((700,700,3))
 ret1, frame1 = cap1.read()
 currentIndex = 0
 while True:
-
     ret2, frame2 = ret1, frame1
     ret1, frame1 = cap1.read()
 
