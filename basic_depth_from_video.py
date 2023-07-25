@@ -56,8 +56,8 @@ def topdown_view(depth: np.ndarray):
 
 
 save_video: bool = False  # turn off when saved video not required
-show_video: bool = True # turn off when video window not required
-top_down: bool = False  # turn on when working on topdown view
+show_video: bool = False # turn off when video window not required
+top_down: bool = True  # turn on when working on topdown view
 cam_dir = os.path.join(Constants.ROOT_DIR, "mapping_wrappers/camera_config/pi/camera_data_480p.json")
 cam_mat, dist_coeff, _ = load_camera_data_json(cam_dir)
 path = os.path.join(Constants.ROOT_DIR, "results/depth_test1")
@@ -67,7 +67,7 @@ path = os.path.join(Constants.ROOT_DIR, "results/depth_test1")
 cap1 = cv2.VideoCapture(os.path.join(path, "far.h264"))
 cap2 = cv2.VideoCapture(os.path.join(path, "close.h264"))
 hightFile = pd.read_csv(os.path.join(path, "tello_heights_far.csv"))
-hightFile = np.array(hightFile)
+hightFile = np.array(hightFile,dtype=float)
 
 
 if save_video:
@@ -79,10 +79,17 @@ detector = cv2.ORB_create(nfeatures=1000)
 depth_frame = np.zeros((700,700,3))
 ret1, frame1 = cap1.read()
 currentIndex = 0
+
 while True:
     ret2, frame2 = ret1, frame1
-    ret1, frame1 = cap1.read()
-
+    curr = hightFile[currentIndex]
+    while currentIndex < hightFile.shape[0]-1 and hightFile[currentIndex] == hightFile[currentIndex+1]:
+        print(currentIndex)
+        ret1, frame1 = cap1.read()
+        currentIndex +=1
+    #if currentIndex == hightFile.shape[0]-1:
+     #   break
+    
     # cap2.set(cv2.CAP_PROP_POS_FRAMES, pair - 1)  # seek to best pair, doesn't work
     if not ret1:
         if save_video:
