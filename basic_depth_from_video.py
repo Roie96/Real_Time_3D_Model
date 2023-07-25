@@ -3,6 +3,7 @@ import os
 import cv2
 import numpy as np
 import csv
+import pandas as pd
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -55,8 +56,8 @@ def topdown_view(depth: np.ndarray):
 
 
 save_video: bool = False  # turn off when saved video not required
-show_video: bool = False # turn off when video window not required
-top_down: bool = True  # turn on when working on topdown view
+show_video: bool = True # turn off when video window not required
+top_down: bool = False  # turn on when working on topdown view
 cam_dir = os.path.join(Constants.ROOT_DIR, "mapping_wrappers/camera_config/pi/camera_data_480p.json")
 cam_mat, dist_coeff, _ = load_camera_data_json(cam_dir)
 path = os.path.join(Constants.ROOT_DIR, "results/depth_test1")
@@ -65,6 +66,10 @@ path = os.path.join(Constants.ROOT_DIR, "results/depth_test1")
 # best_pair = generate_angle_pairs(angles1, angles2)  # doesn't work
 cap1 = cv2.VideoCapture(os.path.join(path, "far.h264"))
 cap2 = cv2.VideoCapture(os.path.join(path, "close.h264"))
+hightFile = pd.read_csv(os.path.join(path, "tello_heights_far.csv"))
+hightFile = np.array(hightFile)
+
+
 if save_video:
     writer = cv2.VideoWriter(os.path.join(path, "depth.mp4"), -1, 40, (640, 480))
 else:
@@ -72,14 +77,19 @@ else:
 # Initialize the feature detector (e.g., ORB, SIFT, etc.)
 detector = cv2.ORB_create(nfeatures=1000)
 depth_frame = np.zeros((700,700,3))
+ret1, frame1 = cap1.read()
+currentIndex = 0
 while True:
-    # cap2.set(cv2.CAP_PROP_POS_FRAMES, pair - 1)  # seek to best pair, doesn't work
+
+    ret2, frame2 = ret1, frame1
     ret1, frame1 = cap1.read()
+
+    # cap2.set(cv2.CAP_PROP_POS_FRAMES, pair - 1)  # seek to best pair, doesn't work
     if not ret1:
         if save_video:
             writer.release()
         break
-    ret2, frame2 = cap2.read()
+    # ret2, frame2 = cap2.read()
     # combined_frame = np.concatenate((frame1, frame2), axis=1)
     # cv2.imshow("frames", combined_frame)
     # ORB
@@ -100,8 +110,7 @@ while True:
     # show depth
     points1 = np.array([keypoints1[match.queryIdx].pt for match in matches])
     points2 = np.array([keypoints2[match.trainIdx].pt for match in matches])
-    depth = depth_from_h264_vectors(np.hstack((points1, points2)), cam_mat,
-                                    30)  # you might want to save one of these for the topdown view
+    depth = depth_from_h264_vectors(np.hstack((points1, points2)), cam_mat, 1)  # you might want to save one of these for the topdown view
     if top_down:
         depth_frame , data = topdown_view(np.hstack((points1, depth[:, None])))
         all_data = np.append(all_data, data, axis=0) 
@@ -117,7 +126,7 @@ while True:
 
     if save_video:
         writer.write(depth_frame)
-saveData(all_data,'/Users/roieshahar/Desktop/לימודים/שנה ג/סמסטר ג/למידת נתונים בזמן אמת/etgar/results/depth_test1/3dPoints.csv')
+saveData(all_data,os.path.join(path, "3dPoints.csv"))
 visualize_3d_points(all_data)
 
 
