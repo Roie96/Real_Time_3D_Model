@@ -12,7 +12,9 @@ from depth_trackers.depth_analysis import depth_from_h264_vectors
 
 from mapping.utils.Constants import Constants
 from mapping.utils.file import load_camera_data_json
+
 all_data = np.empty((0, 3), dtype=np.float32)
+
 
 def visualize_3d_points(points3d):
     fig = plt.figure()
@@ -23,14 +25,15 @@ def visualize_3d_points(points3d):
     ax.set_zlabel('Z')
     plt.show()
 
+
 def saveData(data, fileName):
     with open(fileName, 'w', newline='') as csvfile:
-        csv_writer = csv.writer(csvfile) #create file
+        csv_writer = csv.writer(csvfile)  # create file
         csv_writer.writerows(data)
 
-        
+
 def topdown_view(depth: np.ndarray):
-    image = np.full((700,700,3), 255, dtype=np.uint8)
+    image = np.full((700, 700, 3), 255, dtype=np.uint8)
     """
     This function returns an image (WxHx3 matrix of uint8),
     representing a top-down view of the given depth map
@@ -38,7 +41,7 @@ def topdown_view(depth: np.ndarray):
     """
     # depth map to cloud, clip it at 700cm to prevent outliers
     depth[:, 2] = np.clip(depth[:, 2], 0, 700)
-    
+
     # Scale and center the 3D points around the image center
     max_depth = 700
     depth[:, :2] = np.squeeze(cv2.undistortPoints(depth[None, :, :2], cam_mat, dist_coeff)) * depth[:, 2:]
@@ -51,12 +54,12 @@ def topdown_view(depth: np.ndarray):
         centerData.append(pixel)
         # Draw a white dot on the top_down_image
         cv2.circle(image, (pixel[0], pixel[2]), 1, (0, 0, 0), -1)
-        
+
     return image, centerData
 
 
 save_video: bool = False  # turn off when saved video not required
-show_video: bool = False # turn off when video window not required
+show_video: bool = False  # turn off when video window not required
 top_down: bool = True  # turn on when working on topdown view
 cam_dir = os.path.join(Constants.ROOT_DIR, "mapping_wrappers/camera_config/pi/camera_data_480p.json")
 cam_mat, dist_coeff, _ = load_camera_data_json(cam_dir)
@@ -67,8 +70,7 @@ path = os.path.join(Constants.ROOT_DIR, "results/depth_test1")
 cap1 = cv2.VideoCapture(os.path.join(path, "far.h264"))
 cap2 = cv2.VideoCapture(os.path.join(path, "close.h264"))
 hightFile = pd.read_csv(os.path.join(path, "tello_heights_far.csv"))
-hightFile = np.array(hightFile,dtype=float)
-
+hightFile = np.array(hightFile, dtype=float)
 
 if save_video:
     writer = cv2.VideoWriter(os.path.join(path, "depth.mp4"), -1, 40, (640, 480))
@@ -76,20 +78,20 @@ else:
     writer = None  # just to stop warning
 # Initialize the feature detector (e.g., ORB, SIFT, etc.)
 detector = cv2.ORB_create(nfeatures=1000)
-depth_frame = np.zeros((700,700,3))
+depth_frame = np.zeros((700, 700, 3))
 ret1, frame1 = cap1.read()
 currentIndex = 0
 
 while True:
     ret2, frame2 = ret1, frame1
     curr = hightFile[currentIndex]
-    while currentIndex < hightFile.shape[0]-1 and hightFile[currentIndex] == hightFile[currentIndex+1]:
-        print(currentIndex)
+    currentIndex += 1
+    while currentIndex < hightFile.shape[0] - 1 and hightFile[currentIndex + 1] - hightFile[currentIndex] < 1:
         ret1, frame1 = cap1.read()
-        currentIndex +=1
-    #if currentIndex == hightFile.shape[0]-1:
-     #   break
-    
+        currentIndex += 1
+    if currentIndex == hightFile.shape[0] - 1:
+        break
+
     # cap2.set(cv2.CAP_PROP_POS_FRAMES, pair - 1)  # seek to best pair, doesn't work
     if not ret1:
         if save_video:
@@ -109,21 +111,23 @@ while True:
     matches = matcher.match(descriptors1, descriptors2)
     print(len(matches), "matches using ORB")
     # show matches
-    #frame_with_matches = cv2.drawMatches(frame1, keypoints1, frame2, keypoints2, matches[:100], None)
-    #cv2.imshow("ORB matches", frame_with_matches)
-    #cv2.waitKey(0)
-    #continue
+    # frame_with_matches = cv2.drawMatches(frame1, keypoints1, frame2, keypoints2, matches[:100], None)
+    # cv2.imshow("ORB matches", frame_with_matches)
+    # cv2.waitKey(0)
+    # continue
     # show depth
     points1 = np.array([keypoints1[match.queryIdx].pt for match in matches])
     points2 = np.array([keypoints2[match.trainIdx].pt for match in matches])
-    depth = depth_from_h264_vectors(np.hstack((points1, points2)), cam_mat, 1)  # you might want to save one of these for the topdown view
+    depth = depth_from_h264_vectors(np.hstack((points1, points2)), cam_mat,
+                                    1)  # you might want to save one of these for the topdown view
     if top_down:
-        depth_frame , data = topdown_view(np.hstack((points1, depth[:, None])))
-        all_data = np.append(all_data, data, axis=0) 
+        depth_frame, data = topdown_view(np.hstack((points1, depth[:, None])))
+        all_data = np.append(all_data, data, axis=0)
     else:
         depth_frame = frame1.copy()
         int_points1 = points1.astype(int)
-        depth_color = np.clip(depth * 255 / 500, 0, 255)[:, None]  # clip  values from 0 to 5m and scale to 0-255(color range)
+        depth_color = np.clip(depth * 255 / 500, 0, 255)[:,
+                      None]  # clip  values from 0 to 5m and scale to 0-255(color range)
         for color, point in zip(depth_color, int_points1):
             cv2.rectangle(depth_frame, point[::] - 5, point[::] + 5, color, -1)
     if show_video:
@@ -132,19 +136,18 @@ while True:
 
     if save_video:
         writer.write(depth_frame)
-saveData(all_data,os.path.join(path, "3dPoints.csv"))
+saveData(all_data, os.path.join(path, "3dPoints.csv"))
 visualize_3d_points(all_data)
 
-
 # similar method that uses motion vectors
-#points3d = triangulate_points(keypoints1, keypoints2, matches, 60, cam_mat, dist_coeff)
-#depth_frame = frame1.copy()
-#frame1[(points3d[:, :2]).astype(int)] = 255*(points3d[:, 3]/np.max(points3d[:, 3]))
+# points3d = triangulate_points(keypoints1, keypoints2, matches, 60, cam_mat, dist_coeff)
+# depth_frame = frame1.copy()
+# frame1[(points3d[:, :2]).astype(int)] = 255*(points3d[:, 3]/np.max(points3d[:, 3]))
 
 # Motion Vectors
-#vectors = ffmpeg_encode_extract(frame1, frame2, subpixel=False)
-#print(len(vectors), "matches using MV")
-#combined_frame = np.concatenate((frame1, frame2), axis=1)
-#combined_frame = overlay_arrows_combined_frames(combined_frame, vectors, max_vectors=50)
-#cv2.imshow("MV matches", combined_frame)
-#cv2.waitKey(0)
+# vectors = ffmpeg_encode_extract(frame1, frame2, subpixel=False)
+# print(len(vectors), "matches using MV")
+# combined_frame = np.concatenate((frame1, frame2), axis=1)
+# combined_frame = overlay_arrows_combined_frames(combined_frame, vectors, max_vectors=50)
+# cv2.imshow("MV matches", combined_frame)
+# cv2.waitKey(0)
