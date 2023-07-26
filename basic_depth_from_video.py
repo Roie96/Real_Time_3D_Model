@@ -136,38 +136,17 @@ while True:
     # show depth
     
     distances = np.array([match.distance for match in matches])
-    thershold = np.percentile(distances, 50)
+    thershold = np.percentile(distances, 90)
     points1 = np.array([keypoints1[match.queryIdx].pt for match in matches if match.distance<thershold])
     points2 = np.array([keypoints2[match.trainIdx].pt for match in matches if match.distance<thershold])
     
-
-  
-    #matches12 = matcher.match(descriptors1, descriptors2)
-    #matches23 = matcher.match(descriptors2, descriptors3)
-    #matches31 = matcher.match(descriptors3, descriptors1)
-    
-     
-    #points1 = np.array([keypoints1[match.queryIdx].pt for match in matches12])
-    #points2 = np.array([keypoints2[match.trainIdx].pt for match in matches23])
-    #points3 = np.array([keypoints1[match.queryIdx].pt for match in matches31])
-
-    #keypoints_indices12 = set([match.queryIdx for match in matches12])
-    #keypoints_indices23 = set([match.trainIdx for match in matches23])
-    #keypoints_indices31 = set([match.trainIdx for match in matches31])
-
-    # Find the common keypoints' indices for all three matches
-    #common_keypoints_indices = keypoints_indices12.intersection(keypoints_indices23, keypoints_indices31)
-
-    # Extract the matching keypoints from the three sets
-    #matching_keypoints1 = np.array([keypoints1[match.queryIdx] for match in matches12 if match.queryIdx in common_keypoints_indices])
-    #matching_keypoints2 = np.array([keypoints2[match.trainIdx] for match in matches23 if match.trainIdx in common_keypoints_indices])
-    #matching_keypoints3 = np.array([keypoints3[match.trainIdx] for match in matches31 if match.trainIdx in common_keypoints_indices])
-    
+    #points1 = np.array([keypoints1[match.queryIdx].pt for match in matches])
+    #points2 = np.array([keypoints2[match.trainIdx].pt for match in matches])
+ 
    
     diffHight = abs(frame1[1]- frame2[1])
-    depth = depth_from_h264_vectors(np.hstack((points1, points2)), cam_mat, 3*diffHight)# you might want to save one of these for the topdown view
+    depth = depth_from_h264_vectors(np.hstack((points1, points2)), cam_mat, diffHight)# you might want to save one of these for the topdown view
     
-    #depth = depth_from_h264_vectors(np.hstack((matching_keypoints1, matching_keypoints2, matching_keypoints3)), cam_mat, 10)
 
     if top_down:
         depth_frame1, data1 = topdown_view(np.hstack((points1, depth[:, None])))
