@@ -119,13 +119,12 @@ while True:
     points2 = np.array([keypoints2[match.trainIdx].pt for match in matches])
     diffHight = hightFile[currentIndex+1] - hightFile[currentIndex]
     #print(diffHight)
-    depth = depth_from_h264_vectors(np.hstack((points1, points2)), cam_mat, 40)  # you might want to save one of these for the topdown view
+    depth = depth_from_h264_vectors(np.hstack((points1, points2)), cam_mat, 30)  # you might want to save one of these for the topdown view
     if top_down:
         depth_frame, data = topdown_view(np.hstack((points1, depth[:, None])))
         allData = np.append(allData, data, axis=0)
-        
-        mask = allData[:, 2] > 500 # we choose 500 as a threshold after viewing the data
-        # Apply the mask to keep only the points that satisfy the condition
+        threshold = 0  # Change if needed
+        mask = allData[:, 2] > threshold 
         filteredData = allData[mask]
        
     else:
@@ -141,8 +140,8 @@ while True:
 
     if save_video:
         writer.write(depth_frame)
-saveData(filteredData, os.path.join(path, "3dPoints.csv"))
-visualize_3d_points(filteredData)
+saveData(filteredData[:1000], os.path.join(path, "3dPoints.csv"))
+visualize_3d_points(filteredData[:1000])
 
 # similar method that uses motion vectors
 # points3d = triangulate_points(keypoints1, keypoints2, matches, 60, cam_mat, dist_coeff)
