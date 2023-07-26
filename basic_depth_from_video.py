@@ -13,8 +13,8 @@ from depth_trackers.depth_analysis import depth_from_h264_vectors
 from mapping.utils.Constants import Constants
 from mapping.utils.file import load_camera_data_json
 
-all_data = np.empty((0, 3), dtype=np.float32)
-
+allData = np.empty((0, 3), dtype=np.float32)
+max_depth = 700
 
 def visualize_3d_points(points3d):
     fig = plt.figure()
@@ -43,7 +43,6 @@ def topdown_view(depth: np.ndarray):
     depth[:, 2] = np.clip(depth[:, 2], 0, 700)
 
     # Scale and center the 3D points around the image center
-    max_depth = 700
     depth[:, :2] = np.squeeze(cv2.undistortPoints(depth[None, :, :2], cam_mat, dist_coeff)) * depth[:, 2:]
 
     centerData = []
@@ -69,17 +68,17 @@ path = os.path.join(Constants.ROOT_DIR, "results/depth_test1")
 # best_pair = generate_angle_pairs(angles1, angles2)  # doesn't work
 cap1 = cv2.VideoCapture(os.path.join(path, "far.h264"))
 cap2 = cv2.VideoCapture(os.path.join(path, "close.h264"))
-hightFile = pd.read_csv(os.path.join(path, "tello_heights_far.csv"))
+hightFile = pd.read_csv(os.path.join(path, "tello_heights_close.csv"))
 hightFile = np.array(hightFile, dtype=float)
 
 if save_video:
-    writer = cv2.VideoWriter(os.path.join(path, "depth.mp4"), -1, 40, (640, 480))
+    writer = cv2.VideoWriter(os.path.join(path, "close.mp4"), -1, 40, (640, 480))
 else:
     writer = None  # just to stop warning
 # Initialize the feature detector (e.g., ORB, SIFT, etc.)
 detector = cv2.ORB_create(nfeatures=1000)
 depth_frame = np.zeros((700, 700, 3))
-ret1, frame1 = cap1.read()
+ret1, frame1 = cap2.read()
 currentIndex = 0
 
 while True:
@@ -87,7 +86,7 @@ while True:
     curr = hightFile[currentIndex]
     currentIndex += 1
     while currentIndex < hightFile.shape[0] - 1 and hightFile[currentIndex + 1] - hightFile[currentIndex] < 1:
-        ret1, frame1 = cap1.read()
+        ret1, frame1 = cap2.read()
         currentIndex += 1
     if currentIndex == hightFile.shape[0] - 1:
         break
@@ -118,11 +117,17 @@ while True:
     # show depth
     points1 = np.array([keypoints1[match.queryIdx].pt for match in matches])
     points2 = np.array([keypoints2[match.trainIdx].pt for match in matches])
-    depth = depth_from_h264_vectors(np.hstack((points1, points2)), cam_mat,
-                                    1)  # you might want to save one of these for the topdown view
+    diffHight = hightFile[currentIndex+1] - hightFile[currentIndex]
+    #print(diffHight)
+    depth = depth_from_h264_vectors(np.hstack((points1, points2)), cam_mat, 40)  # you might want to save one of these for the topdown view
     if top_down:
         depth_frame, data = topdown_view(np.hstack((points1, depth[:, None])))
-        all_data = np.append(all_data, data, axis=0)
+        allData = np.append(allData, data, axis=0)
+        
+        mask = allData[:, 2] > 500 # we choose 500 as a threshold after viewing the data
+        # Apply the mask to keep only the points that satisfy the condition
+        filteredData = allData[mask]
+       
     else:
         depth_frame = frame1.copy()
         int_points1 = points1.astype(int)
@@ -136,8 +141,8 @@ while True:
 
     if save_video:
         writer.write(depth_frame)
-saveData(all_data, os.path.join(path, "3dPoints.csv"))
-visualize_3d_points(all_data)
+saveData(filteredData, os.path.join(path, "3dPoints.csv"))
+visualize_3d_points(filteredData)
 
 # similar method that uses motion vectors
 # points3d = triangulate_points(keypoints1, keypoints2, matches, 60, cam_mat, dist_coeff)
