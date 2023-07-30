@@ -81,8 +81,8 @@ depth_frame = np.zeros((700, 700, 3))
 ret1, frame1 = cap1.read()
 currentIndex = 0
 nextIndex = 0
-
 frameList = []
+
 #Get all unqiue frames by hight
 while nextIndex < hightFile.shape[0] - 1:  
     currentIndex = nextIndex
@@ -101,7 +101,7 @@ while True:
         break
     frame1 = frameList[i]
     frame2 = frameList[i+1]
-    #frame3 = frameList[i+2]
+    
     # cap2.set(cv2.CAP_PROP_POS_FRAMES, pair - 1)  # seek to best pair, doesn't work
     #if not ret1:
     #    if save_video:
@@ -115,12 +115,10 @@ while True:
     # ORB
     gray1 = cv2.cvtColor(frame1[0], cv2.COLOR_BGR2GRAY)
     gray2 = cv2.cvtColor(frame2[0], cv2.COLOR_BGR2GRAY)
-    #gray3 = cv2.cvtColor(frame3[0], cv2.COLOR_BGR2GRAY)
 
     # Detect keypoints and compute descriptors for both images
     keypoints1, descriptors1 = detector.detectAndCompute(gray1, None)
     keypoints2, descriptors2 = detector.detectAndCompute(gray2, None)
-    #keypoints3, descriptors3 = detector.detectAndCompute(gray3, None)
 
     matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
     # Perform the matching
@@ -136,12 +134,10 @@ while True:
     # show depth
     
     distances = np.array([match.distance for match in matches])
-    thershold = np.percentile(distances, 90)
+    thershold = np.percentile(distances, 100)
     points1 = np.array([keypoints1[match.queryIdx].pt for match in matches if match.distance<thershold])
     points2 = np.array([keypoints2[match.trainIdx].pt for match in matches if match.distance<thershold])
     
-    #points1 = np.array([keypoints1[match.queryIdx].pt for match in matches])
-    #points2 = np.array([keypoints2[match.trainIdx].pt for match in matches])
  
    
     diffHight = abs(frame1[1]- frame2[1])
@@ -151,10 +147,6 @@ while True:
     if top_down:
         depth_frame1, data1 = topdown_view(np.hstack((points1, depth[:, None])))
         allData = np.append(allData, data1, axis=0)
-        
-        #threshold = 0  # Change if needed
-        #mask = allData[:, 2] > threshold 
-        #filteredData = allData[mask]
         
     else:
         depth_frame = frame1.copy()
