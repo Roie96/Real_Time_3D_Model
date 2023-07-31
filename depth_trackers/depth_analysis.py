@@ -15,7 +15,7 @@ def depth_from_h264_vectors(vectors: np.ndarray, camera_matrix: np.ndarray, diff
     Estimates depth of each 3d point, represented as a vector(x1, y1, x2, y2) between its
     2d location in 2 consecutive frames with a known height difference
     """
-    return diff * camera_matrix[1, 2] / np.abs(vectors[:, 3] - vectors[:, 1])
+    return diff * camera_matrix[1, 1] / np.abs(vectors[:, 3] - vectors[:, 1])
 
 
 def depth_from_pi_vectors(vectors: np.ndarray, camera_matrix: np.ndarray, diff, **kwargs):

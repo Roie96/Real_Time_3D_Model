@@ -66,9 +66,9 @@ path = os.path.join(Constants.ROOT_DIR, "results/depth_test1")
 # angles1 = np.loadtxt(os.path.join(path, "tello_angles1.csv"))
 # angles2 = np.loadtxt(os.path.join(path, "tello_angles2.csv"))
 # best_pair = generate_angle_pairs(angles1, angles2)  # doesn't work
-cap1 = cv2.VideoCapture(os.path.join(path, "close_end.h264"))
-cap2 = cv2.VideoCapture(os.path.join(path, "close_start.h264"))
-hightFile = pd.read_csv(os.path.join(path, "tello_heights_close.csv"))
+cap1 = cv2.VideoCapture(os.path.join(path, "far_end.h264"))
+cap2 = cv2.VideoCapture(os.path.join(path, "far_start.h264"))
+hightFile = pd.read_csv(os.path.join(path, "tello_heights_far.csv"))
 hightFile = np.array(hightFile, dtype=float)
 
 if save_video:
@@ -78,25 +78,20 @@ else:
 # Initialize the feature detector (e.g., ORB, SIFT, etc.)
 detector = cv2.ORB_create(nfeatures=1000)
 depth_frame = np.zeros((700, 700, 3))
-ret1, frame1 = cap2.read()
-index2 = 99
+index2 = int((hightFile.shape[0]-1)/2)
 index1 = 0
 
 while True:
     # ret2, frame2 = ret1, frame1
     # curr = hightFile[currentIndex]
     # currentIndex += 1
-    ret1, frame1 = cap1.read()
-    ret2, frame2 = cap2.read()
-    index1 += 1
-    index2 += 1
     # while currentIndex < hightFile.shape[0] and hightFile[currentIndex] - hightFile[currentIndex - 1] < 1:
     #     ret1, frame1 = cap2.read()
     #     currentIndex += 1
     # if currentIndex == hightFile.shape[0]:
     #     break
-
-
+    ret1, frame1 = cap1.read()
+    ret2, frame2 = cap2.read()
     # cap2.set(cv2.CAP_PROP_POS_FRAMES, pair - 1)  # seek to best pair, doesn't work
     if not ret1 or not ret2:
         if save_video:
@@ -121,8 +116,10 @@ while True:
     # cv2.waitKey(0)
     # continue
     # show depth
-    points1 = np.array([keypoints1[match.queryIdx].pt for match in matches])
-    points2 = np.array([keypoints2[match.trainIdx].pt for match in matches])
+    distances = np.array([match.distance for match in matches])
+    thershold = np.percentile(distances, 100)
+    points1 = np.array([keypoints1[match.queryIdx].pt for match in matches if match.distance < thershold])
+    points2 = np.array([keypoints2[match.trainIdx].pt for match in matches if match.distance < thershold])
     diffHight = hightFile[index2] - hightFile[index1]
     #print(diffHight)
     depth = depth_from_h264_vectors(np.hstack((points1, points2)), cam_mat, diffHight)  # you might want to save one of these for the topdown view
@@ -147,7 +144,17 @@ while True:
 
     if save_video:
         writer.write(depth_frame)
-random_indices = np.random.choice(allData.shape[0], int(allData.shape[0]/8), replace=False)
+    index1 += 1
+    index2 += 1
+    # while index1 < (hightFile.shape[0] - 1)/2 and hightFile[index1 + 1] - hightFile[index1] < 1:
+    #     ret1, frame1 = cap1.read()
+    #     index1 += 1
+    # while index2 < hightFile.shape[0] - 1 and hightFile[index2 + 1] - hightFile[index2] < 1:
+    #     ret2, frame2 = cap2.read()
+    #     index2 += 1
+    # if index1 == (hightFile.shape[0] - 1)/2 and index2 == hightFile.shape[0] - 1:
+    #     break
+random_indices = np.random.choice(allData.shape[0], int(allData.shape[0]/9), replace=False)
 filteredData = allData[random_indices]
 saveData(filteredData, os.path.join(path, "3dPoints.csv"))
 visualize_3d_points(filteredData)
