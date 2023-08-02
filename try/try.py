@@ -5,7 +5,10 @@ from matplotlib import pyplot as plt
 
 cap1 = cv2.VideoCapture("C:/Users/talha/OneDrive/Desktop/תואר/RTlab/try/close.h264")
 counter = 0
-while counter <= 27:
+while counter < 50:
+    ret2, frame2 = cap1.read()
+    counter += 1
+while counter <= 70:
     ret2, frame2 = cap1.read()
 
     # Check if frames have been read successfully
