@@ -5,10 +5,10 @@ import cv2
 # These values can change depending on the system
 path = "close.h264"
 cap = cv2.VideoCapture(path)
-for i in range(50):
+for i in range(10):
     cap.read()
 frames = []
-for i in range(20):
+for i in range(50):
     ret, frame = cap.read()
     frames.append(frame)
 
@@ -39,8 +39,8 @@ cv2.createTrackbar('speckleRange', 'disp', 0, 100, nothing)
 cv2.createTrackbar('speckleWindowSize', 'disp', 3, 25, nothing)
 cv2.createTrackbar('disp12MaxDiff', 'disp', 5, 25, nothing)
 cv2.createTrackbar('minDisparity', 'disp', 5, 25, nothing)
-cv2.createTrackbar('frameDiff', 'disp', 1, 19, nothing)
-cv2.createTrackbar('frameStart', 'disp', 0, 19, nothing)
+cv2.createTrackbar('frameDiff', 'disp', 1, 199, nothing)
+cv2.createTrackbar('frameStart', 'disp', 0, 199, nothing)
 cv2.createTrackbar('kernelSize', 'disp', 0, 10, nothing)
 cv2.createTrackbar('sigmaX', 'disp', 0, 10000, nothing)
 # Creating an object of StereoBM algorithm
@@ -51,10 +51,9 @@ while True:
     # Capturing and storing left and right camera images
     imgB = frames[cv2.getTrackbarPos('frameStart', 'disp')]
     imgT = frames[cv2.getTrackbarPos('frameStart', 'disp')+cv2.getTrackbarPos('frameDiff', 'disp')]
-    imgB = cv2.rotate(imgB, cv2.ROTATE_90_CLOCKWISE)
-    imgT = cv2.rotate(imgT, cv2.ROTATE_90_CLOCKWISE)
-    imgR_gray = cv2.cvtColor(imgT, cv2.COLOR_BGR2GRAY)
-    imgL_gray = cv2.cvtColor(imgB, cv2.COLOR_BGR2GRAY)
+
+    imgR_gray = cv2.cvtColor(imgB, cv2.COLOR_BGR2GRAY).T
+    imgL_gray = cv2.cvtColor(imgT, cv2.COLOR_BGR2GRAY).T
 
     imgR_gray = cv2.equalizeHist(imgR_gray)
     imgL_gray = cv2.equalizeHist(imgL_gray)
@@ -125,7 +124,7 @@ while True:
 
     # Scaling down the disparity values and normalizing them
     disparity = (disparity / 16.0 - minDisparity) / numDisparities
-    disparity = cv2.rotate(disparity, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    disparity = disparity.T #cv2.rotate(disparity, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
     # Displaying the disparity map
     cv2.imshow("frame", disparity)
