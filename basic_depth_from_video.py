@@ -156,6 +156,7 @@ while True:
     #     break
 random_indices = np.random.choice(allData.shape[0], int(allData.shape[0]/9), replace=False)
 filteredData = allData[random_indices]
+print(allData.shape)
 saveData(filteredData, os.path.join(path, "3dPoints.csv"))
 visualize_3d_points(filteredData)
 

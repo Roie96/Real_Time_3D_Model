@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 # Check for left and right camera IDs
 # These values can change depending on the system
-path = "close.h264"
+path = "rot_low.h264"
 cap = cv2.VideoCapture(path)
 # imgL_gray = cv2.equalizeHist(imgL_gray)
 
@@ -26,21 +26,21 @@ minDisparity = 5
 
 
 # Setting the updated parameters before computing disparity map
-stereo = cv2.StereoBM_create()
+stereo = cv2.StereoSGBM_create()
 stereo.setNumDisparities(numDisparities)
 stereo.setBlockSize(blockSize)
-stereo.setPreFilterType(preFilterType)
-stereo.setPreFilterSize(preFilterSize)
+# stereo.setPreFilterType(preFilterType)
+# stereo.setPreFilterSize(preFilterSize)
 stereo.setPreFilterCap(preFilterCap)
-stereo.setTextureThreshold(textureThreshold)
+# stereo.setTextureThreshold(textureThreshold)
 stereo.setUniquenessRatio(uniquenessRatio)
 stereo.setSpeckleRange(speckleRange)
 stereo.setSpeckleWindowSize(speckleWindowSize)
 stereo.setDisp12MaxDiff(disp12MaxDiff)
-for i in range(20):
-    cap.read()
+# for i in range(20):
+#     cap.read()
 frames = []
-for i in range(179):
+for i in range(99):
     ret, frame = cap.read()
     frames.append(frame)
 

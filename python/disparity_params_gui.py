@@ -3,15 +3,16 @@ import cv2
 
 # Check for left and right camera IDs
 # These values can change depending on the system
-path = "close.h264"
+path = "C:/Users/talha/RealTimeProject/Real_Time_3D_Model/stereoV/rot_low.h264"
 cap = cv2.VideoCapture(path)
-for i in range(10):
-    cap.read()
+# for i in range(10):
+#     cap.read()
 frames = []
-for i in range(50):
-    ret, frame = cap.read()
+ret, frame = cap.read()
+while ret:
     frames.append(frame)
-
+    ret, frame = cap.read()
+print(len(frames))
 # Reading the mapping values for stereo image rectification
 cv_file = cv2.FileStorage("../data/stereo_rectify_maps.xml", cv2.FILE_STORAGE_READ)
 Left_Stereo_Map_x = cv_file.getNode("Left_Stereo_Map_x").mat()
@@ -44,7 +45,23 @@ cv2.createTrackbar('frameStart', 'disp', 0, 199, nothing)
 cv2.createTrackbar('kernelSize', 'disp', 0, 10, nothing)
 cv2.createTrackbar('sigmaX', 'disp', 0, 10000, nothing)
 # Creating an object of StereoBM algorithm
-stereo = cv2.StereoBM_create()
+stereo = cv2.StereoSGBM_create()
+
+cv2.setTrackbarPos('numDisparities', 'disp', 1)
+cv2.setTrackbarPos('blockSize', 'disp', 16)
+cv2.setTrackbarPos('preFilterType', 'disp', 0)
+cv2.setTrackbarPos('preFilterSize', 'disp', 11)
+cv2.setTrackbarPos('preFilterCap', 'disp', 15)
+cv2.setTrackbarPos('textureThreshold', 'disp', 2)
+cv2.setTrackbarPos('uniquenessRatio', 'disp', 15)
+cv2.setTrackbarPos('speckleRange', 'disp', 0)
+cv2.setTrackbarPos('speckleWindowSize', 'disp', 0)
+cv2.setTrackbarPos('disp12MaxDiff', 'disp', 15)
+cv2.setTrackbarPos('minDisparity', 'disp', 12)
+cv2.setTrackbarPos('frameDiff', 'disp', 1)
+cv2.setTrackbarPos('frameStart', 'disp', 0)
+cv2.setTrackbarPos('kernelSize', 'disp', 5)
+cv2.setTrackbarPos('sigmaX', 'disp', 2500)
 
 while True:
 
@@ -103,10 +120,10 @@ while True:
     # Setting the updated parameters before computing disparity map
     stereo.setNumDisparities(numDisparities)
     stereo.setBlockSize(blockSize)
-    stereo.setPreFilterType(preFilterType)
-    stereo.setPreFilterSize(preFilterSize)
+    # stereo.setPreFilterType(preFilterType)
+    # stereo.setPreFilterSize(preFilterSize)
     stereo.setPreFilterCap(preFilterCap)
-    stereo.setTextureThreshold(textureThreshold)
+    # stereo.setTextureThreshold(textureThreshold)
     stereo.setUniquenessRatio(uniquenessRatio)
     stereo.setSpeckleRange(speckleRange)
     stereo.setSpeckleWindowSize(speckleWindowSize)
@@ -114,7 +131,7 @@ while True:
     stereo.setMinDisparity(minDisparity)
 
     # Calculating disparity using the StereoBM algorithm
-    disparity = stereo.compute(imgL_gray, imgR_gray)
+    disparity = stereo.compute(imgL_gray[100:500, 100:500], imgR_gray[100:500, 100:500])
     # NOTE: compute returns a 16bit signed single channel image,
     # CV_16S containing a disparity map scaled by 16. Hence it
     # is essential to convert it to CV_32F and scale it down 16 times.
@@ -122,8 +139,15 @@ while True:
     # Converting to float32
     disparity = disparity.astype(np.float32)
 
+
     # Scaling down the disparity values and normalizing them
     disparity = (disparity / 16.0 - minDisparity) / numDisparities
+
+
+    # focal_length = 1000  # Focal length in pixels
+    # baseline = 120  # Baseline in millimeters
+    # disparity = (focal_length * baseline) / (disparity + minDisparity)
+
     disparity = disparity.T #cv2.rotate(disparity, cv2.ROTATE_90_COUNTERCLOCKWISE)
 
     # Displaying the disparity map
