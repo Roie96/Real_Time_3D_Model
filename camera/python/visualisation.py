@@ -3,7 +3,12 @@ import numpy as np
 import cv2
 import open3d as o3d
 
-def visualize_point_cloud(point_cloud, num1,focal_length,leftImage):
+def visualize_point_cloud(point_cloud):
+    cloud = o3d.geometry.PointCloud()
+    cloud.points = o3d.utility.Vector3dVector(point_cloud)
+    o3d.visualization.draw_geometries([cloud])
+
+
     # min_xyz = point_cloud.min(axis=0)
     # max_xyz = point_cloud.max(axis=0)
     # scaled_woman_point_cloud = 500 + (point_cloud - min_xyz) * (500 - 100) / (max_xyz-min_xyz)
@@ -24,16 +29,5 @@ def visualize_point_cloud(point_cloud, num1,focal_length,leftImage):
     # cv2.waitKey(0)
     # cv2.destroyAllWindows()
 
-    cloud = o3d.geometry.PointCloud()
-    cloud.points = o3d.utility.Vector3dVector(point_cloud)
-    o3d.visualization.draw_geometries([cloud])
 
 
-
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111, projection='3d')
-    # ax.scatter(point_cloud[:, 0], point_cloud[:, 1], point_cloud[:, 2], s=1)
-    # ax.set_xlabel('X')
-    # ax.set_ylabel('Y')
-    # ax.set_zlabel('Z')
-    # plt.show()

@@ -46,12 +46,8 @@ def find_Disparity(left, right, window_size, threshold, median_size):
     aggregated_cost_inv = np.zeros_like(cost_volume)
     for d in range(max_disparity):
         aggregated_cost[:, window_size[1]//2:, d] = cv2.medianBlur(cost_volume[:,window_size[1]//2:,d], median_size)
-        #aggregated_cost[:, :, d] = cv2.medianBlur(cost_volume[:,:,d], median_size)
         aggregated_cost_inv[:,:left.shape[1]-window_size[1]//2, d] = cv2.medianBlur(inverse_cost_volume[:,:left.shape[1]-window_size[1]//2,d], median_size)
-        #aggregated_cost_inv[:,:, d] = cv2.medianBlur(inverse_cost_volume[:,:,d], median_size)
-        #aggregated_cost[:, window_size[1]//2:, d] = cv2.blur(cost_volume[:,window_size[1]//2:,d], (3,7))
-        #aggregated_cost_inv[:,:left.shape[1]-window_size[1]//2, d] = cv2.blur(inverse_cost_volume[:,:left.shape[1]-window_size[1]//2,d], (median_size,median_size))
-
+      
     # disparity = cost_aggregation(cost_volume, median_size)
     # disparity_inv = cost_aggregation(inverse_cost_volume, median_size)
 
@@ -75,11 +71,7 @@ def find_Disparity(left, right, window_size, threshold, median_size):
                     disparity_inv[i, j] = 0
 
 
-    # save before norm- only for save them re-calculation (to use the original disparity values to find depths)
-    # disparity = disparity.astype(np.uint8)
-    # disparity_inv = disparity_inv.astype(np.uint8)
-    # cv2.imwrite('disp_left.jpg', disparity)
-    # cv2.imwrite('disp_right.jpg', disparity_inv)
+
 
     disparity_normalized = ((disparity - np.min(disparity)) / (np.max(disparity) - np.min(disparity)) * 255).astype( np.uint8)
     disparity_inv_normalized = ((disparity_inv - np.min(disparity_inv)) / (np.max(disparity_inv) - np.min(disparity_inv)) * 255).astype( np.uint8)
@@ -105,9 +97,11 @@ def generate_point_cloud(disparity_map, baseline, focal_length):
     cloud[:, :, 0] = np.arange(cloud.shape[0]*cloud.shape[1]).reshape(cloud.shape[0], cloud.shape[1]) % cloud.shape[1]
     cloud[:, :, 1] = (np.arange(cloud.shape[0]*cloud.shape[1]).reshape(cloud.shape[1], cloud.shape[0]) % cloud.shape[0]).T
     cloud[:, :, 2] = baseline*focal_length/disparity_map
+
+    # remove outlires
     cloud = cloud[np.isfinite(cloud[:, :, 2])]
-    # threshold = np.percentile(cloud[:, 2], 90)
-    # cloud = cloud[cloud[:, 2] < threshold]
+    threshold = np.percentile(cloud[:, 2], 40)
+    cloud = cloud[cloud[:, 2] < threshold]
     cloud[:, 0]  = (cloud[:, 0]-cols/2)/focal_length*cloud[:, 2]
     cloud[:, 1]  = (cloud[:, 1]-rows/2)/focal_length*cloud[:, 2]
     return cloud
@@ -120,12 +114,14 @@ if __name__ == '__main__':
         cap.read()
     ret1,leftImage = cap.read()
     leftImage = cv2.rotate(leftImage, cv2.ROTATE_90_CLOCKWISE)
+    #slice thr human in image
     leftImage = leftImage[250:400,0:400]
     
     for i in range(8):
         cap.read()
     ret2,rightImage = cap.read()
     rightImage = cv2.rotate(rightImage, cv2.ROTATE_90_CLOCKWISE)
+    #slice thr human in image
     rightImage = rightImage[250:400,0:400]
 
     camera_matrix = np.loadtxt('../data/K.txt')
@@ -134,10 +130,14 @@ if __name__ == '__main__':
     left = cv2.cvtColor(leftImage, cv2.COLOR_BGR2GRAY)
     right = cv2.cvtColor(rightImage, cv2.COLOR_BGR2GRAY)
 
+    #Var for disparty map
     baseline = 10
     window_size=[7,7]
     threshold = 0.9
     median_size= 9
+
+
+
     disparity, disparity_inv = find_Disparity(left, right, window_size, threshold, median_size)
 
     depth_left = compute_depth_map(disparity, baseline, focal_length)
@@ -150,16 +150,18 @@ if __name__ == '__main__':
     cv2.imwrite('depth_right.jpg',depth_right)
 
     point_cloud = generate_point_cloud(disparity, baseline, focal_length)
-    # with open('depth_left1.csv', 'w', newline='') as file:
-    #     writer = csv.writer(file)
 
-    #     # Write the data to the CSV file row by row
-    #     for row in depth_left:
-    #         writer.writerow(row)
-    visualize_point_cloud(point_cloud,240,focal_length,leftImage)
-# cv2.imshow("t",depth_left)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows(0)
+
+
+    point_cloud[:,2:] = point_cloud[:,2:] / 3
+
+    #bulr z- value for more filled image
+    blur_kernel_size = (5, 5)  
+    sigma = 0.8
+
+    point_cloud[:,2:] = cv2.GaussianBlur(point_cloud[:,2:], blur_kernel_size, sigma)
+    
+    visualize_point_cloud(point_cloud)
 
     
 
