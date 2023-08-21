@@ -79,8 +79,8 @@ def find_Disparity(left, right, window_size, threshold, median_size):
     # cv2.imshow('Disparity  right', disparity_inv_normalized)
 
     # save the display mood of norm values- to submit results!!
-    cv2.imwrite('disp_left_n.jpg',disparity_normalized)
-    cv2.imwrite('disp_right_n.jpg',disparity_inv_normalized)
+    # cv2.imwrite('disp_left_n.jpg',disparity_normalized)
+    # cv2.imwrite('disp_right_n.jpg',disparity_inv_normalized)
 
     return disparity, disparity_inv
 
@@ -100,7 +100,7 @@ def generate_point_cloud(disparity_map, baseline, focal_length):
 
     # remove outlires
     cloud = cloud[np.isfinite(cloud[:, :, 2])]
-    threshold = np.percentile(cloud[:, 2], 40)
+    threshold = np.percentile(cloud[:, 2], 70)
     cloud = cloud[cloud[:, 2] < threshold]
     cloud[:, 0]  = (cloud[:, 0]-cols/2)/focal_length*cloud[:, 2]
     cloud[:, 1]  = (cloud[:, 1]-rows/2)/focal_length*cloud[:, 2]
@@ -108,13 +108,14 @@ def generate_point_cloud(disparity_map, baseline, focal_length):
 
 if __name__ == '__main__':
 
-    path = "../videos/rot_low.h264"
+    path = "../videos/low_res.h264"
     cap = cv2.VideoCapture(path)
     for i in range(40):
         cap.read()
     ret1,leftImage = cap.read()
     leftImage = cv2.rotate(leftImage, cv2.ROTATE_90_CLOCKWISE)
     #slice thr human in image
+    cv2.imwrite("left.png",leftImage)
     leftImage = leftImage[250:400,0:400]
     
     for i in range(8):
@@ -122,8 +123,8 @@ if __name__ == '__main__':
     ret2,rightImage = cap.read()
     rightImage = cv2.rotate(rightImage, cv2.ROTATE_90_CLOCKWISE)
     #slice thr human in image
+    cv2.imwrite("right.png",rightImage)
     rightImage = rightImage[250:400,0:400]
-
     camera_matrix = np.loadtxt('../data/K.txt')
     focal_length = camera_matrix[0][0]
 
@@ -131,10 +132,10 @@ if __name__ == '__main__':
     right = cv2.cvtColor(rightImage, cv2.COLOR_BGR2GRAY)
 
     #Var for disparty map
-    baseline = 10
-    window_size=[7,7]
+    baseline = 2
+    window_size=[7, 7]
     threshold = 0.9
-    median_size= 9
+    median_size = 13 #remove noise
 
 
 
