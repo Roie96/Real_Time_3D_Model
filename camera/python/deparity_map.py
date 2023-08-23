@@ -1,9 +1,9 @@
-import csv
 import cv2
 import numpy as np
 from visualisation import visualize_point_cloud
 from numba import jit, uint8
 
+import time
 
 def find_Disparity(left, right, window_size, median_size):
     cost_volume = part1(left, right, window_size, median_size)
@@ -12,7 +12,7 @@ def find_Disparity(left, right, window_size, median_size):
         aggregated_cost[:, window_size//2:, d] = cv2.medianBlur(cost_volume[:,window_size//2:,d], median_size)
     return np.argmin(aggregated_cost, axis=2)
 
-@jit(uint8[:,:,:](uint8[:, :], uint8[:, :], uint8, uint8), nopython=True, fastmath=True)
+# @jit(uint8[:,:,:](uint8[:, :], uint8[:, :], uint8, uint8), nopython=True, fastmath=True)
 def part1(left, right, window_size, median_size):
     max_disparity = 31
     left_census = np.empty((left.shape[0], left.shape[1], window_size**2), dtype=np.uint8)
@@ -27,6 +27,7 @@ def part1(left, right, window_size, median_size):
             right_census[i, j] = (right_window >= right[i, j]).ravel()
 
     cost_volume = np.empty((left.shape[0], left.shape[1], max_disparity),dtype=np.uint8)
+
     cost_volume[:, :, 0] = np.sum(left_census[:, :] != right_census[:, :], axis=2)
     for d in range(1, max_disparity):
         cost_volume[d:, :, d] = np.sum(left_census[:-d, :] != right_census[d:, :], axis=2)
@@ -61,57 +62,73 @@ if __name__ == '__main__':
     for i in range(40):
         cap.read()
     ret1,leftImage = cap.read()
-    # leftImage = cv2.rotate(leftImage, cv2.ROTATE_90_CLOCKWISE)
-    #slice thr human in image
-    cv2.imwrite("left.png",leftImage)
-    # leftImage = leftImage[250:400,0:400]
+    #slice the human in image
+    leftImage = leftImage[100:500,250:400]
     
     for i in range(8):
         cap.read()
     ret2,rightImage = cap.read()
-    # rightImage = cv2.rotate(rightImage, cv2.ROTATE_90_CLOCKWISE)
-    #slice thr human in image
-    cv2.imwrite("right.png",rightImage)
-    # rightImage = rightImage[250:400,0:400]
+
+    #slice the human in image
+    rightImage = rightImage[100:500,250:400]
     camera_matrix = np.loadtxt('../data/K.txt')
     focal_length = camera_matrix[0][0]
 
     left = cv2.cvtColor(leftImage, cv2.COLOR_BGR2GRAY)
     right = cv2.cvtColor(rightImage, cv2.COLOR_BGR2GRAY)
-    # left = cv2.resize(left, (640, 480))
-    # right = cv2.resize(right, (640, 480))
+
     #Var for disparty map
     baseline = 2
     window_size=7
     threshold = 0.9
     median_size = 13 #remove noise
 
+    # Calculate disparity
 
+    start_total = time.time()
 
+    start_disparity = time.time()
     disparity = find_Disparity(left, right, window_size, median_size)
+    end_disparity = time.time()
+    print("Disparity calculation time:", end_disparity - start_disparity, "seconds")
+
     blur_kernel_size = (5, 5)  
     sigma = 0.8
 
+    # Apply Gaussian blur
+
+    start_blur = time.time()
+    blur_kernel_size = (5, 5)
+    sigma = 0.8
     disparity = cv2.GaussianBlur(disparity.astype(np.float32), blur_kernel_size, sigma)
-    
+    end_blur = time.time()
+    print("Blur time:", end_blur - start_blur, "seconds")
+
+    # Compute depth map
+
+    start_depth = time.time()
     depth_left = compute_depth_map(disparity, baseline, focal_length)
-    # depth_right = compute_depth_map(disparity_inv, baseline, focal_length)
+    end_depth = time.time()
+    print("Depth map calculation time:", end_depth - start_depth, "seconds")
 
     depth_left = depth_left.astype(np.uint8)
-    # depth_right = depth_right.astype(np.uint8)
 
-    cv2.imwrite('depth_left.jpg', depth_left)
-    # cv2.imwrite('depth_right.jpg',depth_right)
+    # Generate point cloud and visualize
 
+    start_point_cloud = time.time()
     point_cloud = generate_point_cloud(disparity, baseline, focal_length)
+    end_point_cloud = time.time()
+    print("Point cloud generation time:", end_point_cloud - start_point_cloud, "seconds")
 
-
-
+    end_total = time.time()
+    print("Total execution time:", end_total - start_total, "seconds")
     # point_cloud[:,2:] = point_cloud[:,2:] / 3
 
-    #bulr z- value for more filled image
     
     visualize_point_cloud(point_cloud)
 
     
 
+
+
+    
