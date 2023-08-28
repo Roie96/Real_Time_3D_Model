@@ -12,7 +12,7 @@ def find_Disparity(left, right, window_size, median_size):
         aggregated_cost[:, window_size//2:, d] = cv2.medianBlur(cost_volume[:,window_size//2:,d], median_size)
     return np.argmin(aggregated_cost, axis=2)
 
-# @jit(uint8[:,:,:](uint8[:, :], uint8[:, :], uint8, uint8), nopython=True, fastmath=True)
+@jit(uint8[:,:,:](uint8[:, :], uint8[:, :], uint8, uint8), nopython=True, fastmath=True)
 def part1(left, right, window_size, median_size):
     max_disparity = 31
     left_census = np.empty((left.shape[0], left.shape[1], window_size**2), dtype=np.uint8)
@@ -31,6 +31,7 @@ def part1(left, right, window_size, median_size):
     cost_volume[:, :, 0] = np.sum(left_census[:, :] != right_census[:, :], axis=2)
     for d in range(1, max_disparity):
         cost_volume[d:, :, d] = np.sum(left_census[:-d, :] != right_census[d:, :], axis=2)
+
     return cost_volume
 
 def compute_depth_map(disparity_map, baseline, focal_length):
@@ -49,7 +50,7 @@ def generate_point_cloud(disparity_map, baseline, focal_length):
 
     # remove outliers
     cloud = cloud[np.isfinite(cloud[:, :, 2])]
-    threshold = np.percentile(cloud[:, 2], 70)
+    threshold = np.percentile(cloud[:, 2], 50)
     cloud = cloud[cloud[:, 2] < threshold]
     cloud[:, 0]  = -(cloud[:, 0]-cols/2)/focal_length*cloud[:, 2]
     cloud[:, 1]  = -(cloud[:, 1]-rows/2)/focal_length*cloud[:, 2]
@@ -57,20 +58,20 @@ def generate_point_cloud(disparity_map, baseline, focal_length):
 
 if __name__ == '__main__':
 
-    path = "../videos/low_res.h264"
+    path = "../videos/rot_low.h264"
     cap = cv2.VideoCapture(path)
     for i in range(40):
         cap.read()
     ret1,leftImage = cap.read()
     #slice the human in image
-    leftImage = leftImage[100:500,250:400]
+    leftImage = leftImage[0:500,250:400]
     
     for i in range(8):
         cap.read()
     ret2,rightImage = cap.read()
 
     #slice the human in image
-    rightImage = rightImage[100:500,250:400]
+    rightImage = rightImage[0:500,250:400]
     camera_matrix = np.loadtxt('../data/K.txt')
     focal_length = camera_matrix[0][0]
 
@@ -90,10 +91,8 @@ if __name__ == '__main__':
     start_disparity = time.time()
     disparity = find_Disparity(left, right, window_size, median_size)
     end_disparity = time.time()
+    cv2.imwrite("disp.png",disparity)
     print("Disparity calculation time:", end_disparity - start_disparity, "seconds")
-
-    blur_kernel_size = (5, 5)  
-    sigma = 0.8
 
     # Apply Gaussian blur
 
@@ -122,10 +121,9 @@ if __name__ == '__main__':
 
     end_total = time.time()
     print("Total execution time:", end_total - start_total, "seconds")
-    # point_cloud[:,2:] = point_cloud[:,2:] / 3
 
     
-    visualize_point_cloud(point_cloud)
+    visualize_point_cloud(point_cloud[7500:,:])
 
     
 
