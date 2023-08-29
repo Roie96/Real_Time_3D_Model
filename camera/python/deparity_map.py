@@ -6,14 +6,14 @@ from numba import jit, uint8
 import time
 
 def find_Disparity(left, right, window_size, median_size):
-    cost_volume = part1(left, right, window_size, median_size)
+    cost_volume = generate_census(left, right, window_size, median_size)
     aggregated_cost = np.empty_like(cost_volume)
     for d in range(31):
         aggregated_cost[:, window_size//2:, d] = cv2.medianBlur(cost_volume[:,window_size//2:,d], median_size)
     return np.argmin(aggregated_cost, axis=2)
 
 @jit(uint8[:,:,:](uint8[:, :], uint8[:, :], uint8, uint8), nopython=True, fastmath=True)
-def part1(left, right, window_size, median_size):
+def generate_census(left, right, window_size, median_size):
     max_disparity = 31
     left_census = np.empty((left.shape[0], left.shape[1], window_size**2), dtype=np.uint8)
     right_census = np.empty((right.shape[0], right.shape[1], window_size**2), dtype=np.uint8)
@@ -33,13 +33,6 @@ def part1(left, right, window_size, median_size):
         cost_volume[d:, :, d] = np.sum(left_census[:-d, :] != right_census[d:, :], axis=2)
 
     return cost_volume
-
-def compute_depth_map(disparity_map, baseline, focal_length):
-
-    depth_map = np.zeros_like(disparity_map, dtype=np.float32)
-    depth_map[disparity_map > 0] = -baseline * focal_length / disparity_map[disparity_map > 0]
-
-    return depth_map
 
 def generate_point_cloud(disparity_map, baseline, focal_length):
     rows, cols = disparity_map.shape
@@ -102,15 +95,6 @@ if __name__ == '__main__':
     disparity = cv2.GaussianBlur(disparity.astype(np.float32), blur_kernel_size, sigma)
     end_blur = time.time()
     print("Blur time:", end_blur - start_blur, "seconds")
-
-    # Compute depth map
-
-    start_depth = time.time()
-    depth_left = compute_depth_map(disparity, baseline, focal_length)
-    end_depth = time.time()
-    print("Depth map calculation time:", end_depth - start_depth, "seconds")
-
-    depth_left = depth_left.astype(np.uint8)
 
     # Generate point cloud and visualize
 
