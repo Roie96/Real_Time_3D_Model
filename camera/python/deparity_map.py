@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 # from visualisation import visualize_point_cloud 
 # from numba import jit, uint8
-
+from dismap import find_Disparity as new_disp
 import time
 
 def find_Disparity(left, right, window_size, median_size):
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     start_total = time.time()
 
     start_disparity = time.time()
-    disparity = find_Disparity(left, right, window_size, median_size)
+    disparity = new_disp(left, right, window_size, median_size)
     end_disparity = time.time()
     cv2.imwrite("disp.png",disparity)
     print("Disparity calculation time:", end_disparity - start_disparity, "seconds")
