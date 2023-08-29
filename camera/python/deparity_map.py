@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
-# from visualisation import visualize_point_cloud
-from numba import jit, uint8
+# from visualisation import visualize_point_cloud 
+# from numba import jit, uint8
 
 import time
 
@@ -12,7 +12,7 @@ def find_Disparity(left, right, window_size, median_size):
         aggregated_cost[:, window_size//2:, d] = cv2.medianBlur(cost_volume[:,window_size//2:,d], median_size)
     return np.argmin(aggregated_cost, axis=2)
 
-@jit(uint8[:,:,:](uint8[:, :], uint8[:, :], uint8, uint8), nopython=True, fastmath=True)
+# @jit(uint8[:,:,:](uint8[:, :], uint8[:, :], uint8, uint8), nopython=True, fastmath=True)
 def generate_census(left, right, window_size, median_size):
     max_disparity = 31
     left_census = np.empty((left.shape[0], left.shape[1], window_size**2), dtype=np.uint8)
