@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from visualisation import visualize_point_cloud
+# from visualisation import visualize_point_cloud
 from numba import jit, uint8
 
 import time
