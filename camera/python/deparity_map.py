@@ -107,7 +107,7 @@ if __name__ == '__main__':
     print("Total execution time:", end_total - start_total, "seconds")
 
     
-    visualize_point_cloud(point_cloud[7500:,:])
+    # visualize_point_cloud(point_cloud[7500:,:])
 
     
 
