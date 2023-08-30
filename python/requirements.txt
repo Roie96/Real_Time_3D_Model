@@ -8,3 +8,5 @@ Pillow>=8.1.2
 pyparsing>=2.4.7
 python-dateutil>=2.8.1
 six>=1.15.0
+numba>=0.53.1
+open3d>=0.17.0
